@@ -1,0 +1,19 @@
+version: '3'
+
+tasks:
+  default:
+    sources:
+      - main.go
+    cmds:
+      - go build -o bin/sanigate
+    silent: false
+  run:
+    cmds:
+      - ./bin/sanigate
+  release:
+    cmds:
+      - go build -ldflags "-s -w -X main.version=`git tag --sort=-version:refname | head -n 1`" -o bin/sanigatego
+      - go install
+  test:
+    cmds:
+      - go test -v --cover -count=1
