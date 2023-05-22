@@ -5,8 +5,11 @@
 </p>
 
 > 🔧 **Description**: SaniGate is a sanitisation gate tool for shady shell scripts, powered by OpenAI's GPT. It lists the script actions and provides a summary of its apparent security risks.
+> 
 > ⚠️ **<span style="color:red">WARNING</span>**: <span style="color:red">**This app is powered by a GPT Language Model and is not infallible. It could theoretically produce opposite results for the same script. Thus, it should not be blindly trusted but used as a tool to aid in decision making.**</span>
+> 
 > ℹ️ **DISCLAIMER**: The tool requires [OpenAI API key](https://platform.openai.com/account/api-keys) to function. Depending on the size of the script being audited, the number of calls may vary. While this tool is free to use, usage may incur [charges from OpenAI](https://platform.openai.com/account/usage).
+> 
 > 🦠 **Name**: The name comes from **Sanitiz**(**-er**/**-ing**/**-isation**) Gate (aka sani-gate, Disinfection Tunnel, Sanitation Disinfection Gate, Sanitization Booth, Decontamination Chamber, Sterilization Gateway, Cleanroom Air Shower) which are disinfection chambers which typically use a combination of UV-C light and/or misting with a disinfectant solution to eliminate bacteria and viruses on surfaces and clothing.
 
 ## ❓Why
@@ -130,6 +133,7 @@ See: git commit message format https://www.conventionalcommits.org/en/v1.0.0/
 
 - [ ] Write some tests
 - [ ] Add and test more malicious scripts
+- [ ] Make everything configurable (including prompts)
 - [ ] Debug output artefacts (gaps in the list, dot in the summary, etc.) and write some fixes
 - [ ] ❓ Add progress bar & context timeouts
 - [ ] ❓ Create a homebrew installer
