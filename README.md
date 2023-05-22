@@ -11,6 +11,8 @@
 > ℹ️ **DISCLAIMER**: The tool requires [OpenAI API key](https://platform.openai.com/account/api-keys) to function. Depending on the size of the script being audited, the number of calls may vary. While this tool is free to use, usage may incur [charges from OpenAI](https://platform.openai.com/account/usage).
 > 
 > 🦠 **Name**: The name comes from **Sanitiz**(**-er**/**-ing**/**-isation**) Gate (aka sani-gate, Disinfection Tunnel, Sanitation Disinfection Gate, Sanitization Booth, Decontamination Chamber, Sterilization Gateway, Cleanroom Air Shower) which are disinfection chambers which typically use a combination of UV-C light and/or misting with a disinfectant solution to eliminate bacteria and viruses on surfaces and clothing.
+> 
+> ![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/smileart/sanigate/main) 
 
 ## ❓Why
 
@@ -48,7 +50,7 @@ Under the hood, it interacts with the OpenAI API to generate a summary of the sc
 
 ```bash
 # Use your preferred method of setting the ENV var (e.g. https://direnv.net)
-export TRGT_OPENAI_API_KEY="<your_openai_api_key_goes_here>"
+export SNGT_OPENAI_API_KEY="<your_openai_api_key_goes_here>"
 
 # It's not much, but it's honest work
 sanigate --help
