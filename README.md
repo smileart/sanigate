@@ -127,6 +127,8 @@ task --watch
 task release
 task run
 task test
+
+gitleaks detect --source . -v
 ```
 
 See: git commit message format https://www.conventionalcommits.org/en/v1.0.0/
