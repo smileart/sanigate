@@ -15,7 +15,7 @@ func printWarning(logger *log.Logger) {
 			color.InYellowOverBlack(
 				`
 WARNING: This app relies on LLM and CANNOT serve as a replacement for a security audit.
-         Use it at your own risk, and consider it as merely an advisory tool!
+         Use it at your own risk, and consider it merely an advisory tool!
 				`,
 			),
 		),
@@ -71,5 +71,5 @@ func askForConfirmation(logger *log.Logger, question string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return strings.ToLower(answer) == "y" || strings.ToLower(answer) == "yes", nil
+	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes"), nil
 }

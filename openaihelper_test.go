@@ -9,8 +9,8 @@ import (
 
 // NOTE: Not testing OpenAI yet die to https://github.com/sashabaranov/go-openai/issues/30
 
-func TestGetTokenSize(t *testing.T) {
-	model := openai.GPT3TextDavinci003
+func Test_getTokenSize(t *testing.T) {
+	model := openai.GPT3Dot5Turbo
 	prompt := "This is a test prompt."
 	expected := 6
 	actual, err := getTokenSize(model, prompt)
@@ -22,7 +22,7 @@ func TestGetTokenSize(t *testing.T) {
 	}
 }
 
-func TestSliceTextIntoChunks(t *testing.T) {
+func Test_sliceTextIntoChunks(t *testing.T) {
 	text := "This is a test prompt."
 	expected := []string{"This is a test prompt.\n"}
 	actual, err := sliceTextIntoChunks(text)

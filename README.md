@@ -10,13 +10,13 @@
 > 
 > ℹ️ **DISCLAIMER**: The tool requires [OpenAI API key](https://platform.openai.com/account/api-keys) to function. Depending on the size of the script being audited, the number of calls may vary. While this tool is free to use, usage may incur [charges from OpenAI](https://platform.openai.com/account/usage).
 > 
-> 🦠 **Name**: The name comes from **Sanitiz**(**-er**/**-ing**/**-isation**) Gate (aka sani-gate, Disinfection Tunnel, Sanitation Disinfection Gate, Sanitization Booth, Decontamination Chamber, Sterilization Gateway, Cleanroom Air Shower) which are disinfection chambers which typically use a combination of UV-C light and/or misting with a disinfectant solution to eliminate bacteria and viruses on surfaces and clothing.
+> 🦠 **Name**: The name comes from **Sanitiz**(**-er**/**-ing**/**-isation**) Gate (aka sani-gate, Disinfection Tunnel, Sanitation Disinfection Gate, Sanitisation Booth, Decontamination Chamber, Sterilisation Gateway, Cleanroom Air Shower) which are disinfection chambers which typically use a combination of UV-C light and/or misting with a disinfectant solution to eliminate bacteria and viruses on surfaces and clothing.
 > 
 > [![CodeFactor](https://www.codefactor.io/repository/github/smileart/sanigate/badge)](https://www.codefactor.io/repository/github/smileart/sanigate) [![Go Report Card](https://goreportcard.com/badge/github.com/smileart/sanigate)](https://goreportcard.com/report/github.com/smileart/sanigate)
 
 ## ❓Why
 
-It's a known[[1](https://security.stackexchange.com/questions/213401/is-curl-something-sudo-bash-a-reasonably-safe-installation-method)][[2](https://news.ycombinator.com/item?id=10277470)] security issue to run random shell scripts downloaded from the internet. 
+It's a known[[1](https://security.stackexchange.com/questions/213401/is-curl-something-sudo-bash-a-reasonably-safe-installation-method)][[2](https://news.ycombinator.com/item?id=10277470)] security issue to run random shell scripts downloaded from the internet.
 This topic sparks a great deal of debate, with various pros and cons, comparisons of package managers, discussions on GitHub issues, and threads on Reddit. See: 🗨️ Opinions & Links section
 
 <p align="center">
@@ -31,7 +31,7 @@ The issue is multifaceted, and there's no one-size-fits-all solution. Even after
   <a href="https://www.explainxkcd.com/wiki/index.php/1168:_tar">1168: tar Explained</a>
 </p>
 
-I've contemplated a tool like this for quite a while, but solutions using bash -x script.sh or a set of heuristics for decision-making never seemed quite satisfactory. 
+I've contemplated a tool like this for quite a while, but solutions using bash -x script.sh or a set of heuristics for decision-making never seemed quite satisfactory.
 With the advent of the GPT family of Large Language Models (LLMs), I decided it was time to give it a try and see if it could provide a solution to this issue.
 
 Therefore, I've created this tool, which aims to assist by analyzing shell scripts and producing a human-readable summary of their actions and an advisory conclusion regarding its safety.
@@ -45,8 +45,11 @@ go install github.com/smileart/sanigate@latest
 
 ## ☣️ Usage
 
-The usage is fairly straightforward. You simply pipe the script through the tool, and optionally decide if you want to pass it along to the next pipe. 
+The usage is fairly straightforward. You simply pipe the script through the tool, and optionally decide if you want to pass it along to the next pipe.
 Under the hood, it interacts with the OpenAI API to generate a summary of the script, identifying and summarizing its apparent security risks.
+
+- ℹ️ Get your OpenAI API key from https://platform.openai.com/api-keys
+- ℹ️ Check the usage at: https://platform.openai.com/usage
 
 ```bash
 # Use your preferred method of setting the ENV var (e.g. https://direnv.net)
@@ -61,7 +64,7 @@ sanigate --help
 cat ./scripts/CoolDude.sh | sanigate | bash
 cat ./scripts/base64.sh | sanigate | sh
 
-# This one is a false positive (GPT being paranoid, I guess)
+# Sometimes this one is a false positive (GPT being paranoid, I guess)
 cat ./scripts/good.sh | sanigate | sh
 
 # This one is a tricky one (sometimes it's a false negative, although nobody wants some nasty assware on their system)
@@ -70,11 +73,15 @@ cat ./scripts/adware.sh | sanigate | bash
 # Just analyse the script and don't pipe it further (notice the flag)
 cat ./scripts/evil.sh | sanigate -p
 
-# An example of a real-world script which takes really long to analyse
+# An example of a real-world script which takes really long to analyse (and due to complexity might be a false[?] positive)
 curl -fsSL https://get.casaos.io | sanigate | sudo bash
 
 # An example of a normal "safe" script you might encounter and would like to run
 curl -sS https://webi.sh/webi | sanigate | bash
+
+# Devbox is a good one (although it's a good example of a script that downloads/installs something else and runs it too)
+# Which might be a huge security risk in itself (but that's a different story)
+curl -fsSL https://get.jetify.com/devbox | sanigate | bash
 
 # Another good one. The author of this one calls this installation method "gullible". Fair enough.
 curl -Lsf https://sh.benthos.dev | sanigate | bash
@@ -86,7 +93,7 @@ sh <(curl -Ssf tea.xyz | sanigate)
 # Go linters are Ok
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sanigate | sh -s -- -b $(go env GOPATH)/bin
 
-# Rust seems to be pretty careful about their install scripts too
+# Rust seems to be pretty careful about their install scripts too (and it's a great example of a loooooong one)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sanigate | sh
 ```
 

@@ -3,7 +3,7 @@ version: '3'
 tasks:
   default:
     sources:
-      - main.go
+      - "*.go"
     cmds:
       - go build -o bin/sanigate
     silent: false
@@ -17,3 +17,6 @@ tasks:
   test:
     cmds:
       - go test -v --cover -count=1
+  coverage:
+    cmds:
+      - go test -coverprofile coverage.out && go tool cover -html coverage.out

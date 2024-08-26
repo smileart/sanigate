@@ -50,11 +50,11 @@ func sliceTextIntoChunks(text string) ([]string, error) {
 	chunkIndex := 0
 
 	for _, line := range lines {
-		ll, err := getTokenSize(openai.GPT3TextDavinci003, line)
+		ll, err := getTokenSize(openai.GPT3Dot5Turbo, line)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get token size of the line: %w", err)
 		}
-		cl, err := getTokenSize(openai.GPT3TextDavinci003, chunks[chunkIndex])
+		cl, err := getTokenSize(openai.GPT3Dot5Turbo, chunks[chunkIndex])
 		if err != nil {
 			return nil, fmt.Errorf("failed to get token size of the chunk: %w", err)
 		}
@@ -72,17 +72,25 @@ func sliceTextIntoChunks(text string) ([]string, error) {
 
 // requestCompletion sends a request to OpenAI API and returns the response
 func requestCompletion(client *openai.Client, ctx context.Context, prompt string) (string, error) {
-	req := openai.CompletionRequest{
-		Model:       openai.GPT3TextDavinci003,
-		Temperature: temperature,
-		MaxTokens:   maxTokens,
-		Prompt:      prompt,
+	completionReq := openai.ChatCompletionRequest{
+		Model:            openai.GPT3Dot5Turbo,
+		Messages:         []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}},
+		MaxTokens:        maxTokens,
+		Temperature:      temperature,
+		TopP:             0.0,
+		N:                0,
+		Stream:           false,
+		Stop:             []string{},
+		PresencePenalty:  0.0,
+		FrequencyPenalty: 0.0,
+		LogitBias:        map[string]int{},
+		User:             "",
 	}
 
-	resp, err := client.CreateCompletion(ctx, req)
+	resp, err := client.CreateChatCompletion(ctx, completionReq)
 	if err != nil {
 		return "", fmt.Errorf("completion error: %v", err)
 	}
 
-	return resp.Choices[0].Text, nil
+	return resp.Choices[0].Message.Content, nil
 }
