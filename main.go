@@ -13,7 +13,7 @@ import (
 func main() {
 	const unsafeKeyword = "not safe"
 	const notSecure = "not secure"
-	version := "0.1.0"
+	version := "0.2.0"
 
 	ver := flag.Bool("version", false, "print version and exit")
 	porcelain := flag.Bool("porcelain", false, "do not do the plumbing after the analysis")
