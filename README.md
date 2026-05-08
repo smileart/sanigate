@@ -55,8 +55,14 @@ Under the hood, it interacts with the OpenAI API to generate a summary of the sc
 # Use your preferred method of setting the ENV var (e.g. https://direnv.net)
 export SNGT_OPENAI_API_KEY="<your_openai_api_key_goes_here>"
 
+# Optional: pin the model for this shell. Per-invocation override via -m / --model.
+export SNGT_MODEL="gpt-4o-mini"
+
 # It's not much, but it's honest work
 sanigate --help
+
+# Pick a different model just for this run (overrides env var and config)
+cat ./scripts/good.sh | sanigate -m gpt-4o -p
 
 # BEWARE: Some scripts in the ./scripts directory are malicious and are used for testing only.
 #         DO NOT AGREE TO RUN THEM.
@@ -96,6 +102,50 @@ curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/insta
 # Rust seems to be pretty careful about their install scripts too (and it's a great example of a loooooong one)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sanigate | sh
 ```
+
+## ⚙️ Configuration
+
+On the first real run, SaniGate creates a TOML config file at a standard per-OS location:
+
+| OS | Path |
+|---|---|
+| macOS | `~/Library/Application Support/sanigate/config.toml` |
+| Linux | `$XDG_CONFIG_HOME/sanigate/config.toml` (defaults to `~/.config/sanigate/config.toml`) |
+| Windows | `%AppData%\sanigate\config.toml` |
+
+The auto-generated file ships with both keys **commented out**, so the in-binary defaults apply until you uncomment something:
+
+```toml
+# SaniGate config
+# WARNING: this file may contain your OpenAI API key.
+# Do NOT commit it to git or sync it to Dropbox/iCloud/etc.
+# SaniGate enforces mode 0600 on POSIX systems.
+
+# model = "gpt-4o-mini"
+# api_key = "sk-..."  # SNGT_OPENAI_API_KEY env var takes precedence
+```
+
+### Precedence
+
+| Setting | Resolution order |
+|---|---|
+| Model | `--model` / `-m` flag → `SNGT_MODEL` env → `config.model` → built-in default (`gpt-4o-mini`) |
+| API key | `SNGT_OPENAI_API_KEY` env → `config.api_key` |
+
+The asymmetry is intentional: secrets are environment concerns (CI / direnv / 1Password inject env vars), behaviour is a human concern (`-m` for ad-hoc runs). There is no `--api-key` flag — that would put a secret in shell history.
+
+### ⚠️ Secret hygiene
+
+If you choose to put your API key in the config file rather than the env var:
+
+- **Do not commit it.** The file is per-user, not per-project.
+- **Do not store it in synced folders** (Dropbox, iCloud, OneDrive). Cloud-synced secrets are exfiltration risk.
+- On POSIX, SaniGate refuses to load the file if its mode allows group/other read. Fix with `chmod 0600 <path>` if it complains.
+- The file is created with mode `0600` and the directory with `0700` automatically on first run.
+
+### Default model bump
+
+This release switches the default from `gpt-3.5-turbo` to `gpt-4o-mini` (cheaper per token, more capable, supports structured outputs). To pin the previous behaviour, uncomment and set `model = "gpt-3.5-turbo"` in the config.
 
 ## 🧪 Example Runs
 

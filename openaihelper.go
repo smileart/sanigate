@@ -11,26 +11,22 @@ import (
 )
 
 const (
-	apiKeyEnvVar = "SNGT_OPENAI_API_KEY"
-	chunkSize    = 1500
-	temperature  = 0.7
-	maxTokens    = 2000
+	chunkSize   = 1500
+	temperature = 0.7
+	maxTokens   = 2000
 )
 
-// initOpenAI initializes the OpenAI client and returns it along with the context
-func initOpenAI() (*openai.Client, context.Context, error) {
-	apiKey := os.Getenv(apiKeyEnvVar)
+// initOpenAI initializes the OpenAI client with the provided API key.
+func initOpenAI(apiKey string) (*openai.Client, context.Context, error) {
 	if apiKey == "" {
-		return nil, nil, fmt.Errorf("%s environment variable is not set!", apiKeyEnvVar)
+		return nil, nil, fmt.Errorf("API key is empty")
 	}
-
 	client := openai.NewClient(apiKey)
 	ctx := context.Background()
-
 	return client, ctx, nil
 }
 
-// printWarning prints a warning message to STDERR
+// getTokenSize returns the number of tokens in prompt for the given model.
 func getTokenSize(model string, prompt string) (int, error) {
 	tkm, err := tiktoken.EncodingForModel(model)
 	if err != nil {
@@ -38,29 +34,32 @@ func getTokenSize(model string, prompt string) (int, error) {
 	}
 
 	token := tkm.Encode(prompt, nil, nil)
-	res := len(token)
-	return res, nil
+	return len(token), nil
 }
 
 // sliceTextIntoChunks splits the input text into chunks of size chunkSize
-// (measured in OpenAI tokens as defined by the model and the tiktoken library)
-func sliceTextIntoChunks(text string) ([]string, error) {
+// (measured in OpenAI tokens for the given model). Falls back to cl100k_base
+// if the model is unknown to tiktoken-go.
+func sliceTextIntoChunks(text, model string) ([]string, error) {
+	tkm, err := tiktoken.EncodingForModel(model)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "sanigate: tiktoken doesn't recognize %q, falling back to cl100k_base for chunking\n", model)
+		tkm, err = tiktoken.GetEncoding("cl100k_base")
+		if err != nil {
+			return nil, fmt.Errorf("tiktoken fallback failed: %w", err)
+		}
+	}
+
 	lines := strings.Split(text, "\n")
 	chunks := []string{""}
 	chunkIndex := 0
 
 	for _, line := range lines {
-		ll, err := getTokenSize(openai.GPT3Dot5Turbo, line)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get token size of the line: %w", err)
-		}
-		cl, err := getTokenSize(openai.GPT3Dot5Turbo, chunks[chunkIndex])
-		if err != nil {
-			return nil, fmt.Errorf("failed to get token size of the chunk: %w", err)
-		}
+		ll := len(tkm.Encode(line, nil, nil))
+		cl := len(tkm.Encode(chunks[chunkIndex], nil, nil))
 
 		if !(cl+ll < chunkSize) {
-			chunkIndex += 1
+			chunkIndex++
 			chunks = append(chunks, "")
 		}
 
@@ -70,10 +69,10 @@ func sliceTextIntoChunks(text string) ([]string, error) {
 	return chunks, nil
 }
 
-// requestCompletion sends a request to OpenAI API and returns the response
-func requestCompletion(client *openai.Client, ctx context.Context, prompt string) (string, error) {
+// requestCompletion sends a chat completion request for the given model.
+func requestCompletion(client *openai.Client, ctx context.Context, prompt, model string) (string, error) {
 	completionReq := openai.ChatCompletionRequest{
-		Model:            openai.GPT3Dot5Turbo,
+		Model:            model,
 		Messages:         []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}},
 		MaxTokens:        maxTokens,
 		Temperature:      temperature,

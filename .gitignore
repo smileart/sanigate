@@ -80,8 +80,14 @@ tags
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,vim,go
 
+# Build artifacts (architecture-specific, built locally via `task`)
+/bin/
+
 # Taskfile
 .task
 
 # ENV
 .env
+
+# AI
+CLAUDE.MD

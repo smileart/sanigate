@@ -25,7 +25,7 @@ func Test_getTokenSize(t *testing.T) {
 func Test_sliceTextIntoChunks(t *testing.T) {
 	text := "This is a test prompt."
 	expected := []string{"This is a test prompt.\n"}
-	actual, err := sliceTextIntoChunks(text)
+	actual, err := sliceTextIntoChunks(text, openai.GPT4oMini)
 	if err != nil {
 		t.Errorf("sliceTextIntoChunks(%s) failed: %s", text, err)
 	}
