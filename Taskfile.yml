@@ -7,16 +7,55 @@ tasks:
     cmds:
       - go build -o bin/sanigate
     silent: false
+
   run:
     cmds:
       - ./bin/sanigate
-  release:
-    cmds:
-      - go build -ldflags "-s -w -X main.version=`git tag --sort=-version:refname | head -n 1`" -o bin/sanigate
-      - go install
+
   test:
     cmds:
       - go test -v --cover -count=1
+
   coverage:
     cmds:
       - go test -coverprofile coverage.out && go tool cover -html coverage.out
+
+  version:
+    desc: Print the version constant compiled into main.go
+    silent: true
+    cmds:
+      - grep -E '^var version =' main.go | sed -E 's/.*"([^"]+)".*/\1/'
+
+  tag:
+    desc: Create an annotated git tag matching main.go's version (vX.Y.Z). Requires a clean working tree. Push with `git push origin vX.Y.Z`.
+    silent: true
+    cmds:
+      - |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Error: working tree not clean — commit or stash before tagging." >&2
+          exit 1
+        fi
+        VERSION=$(grep -E '^var version =' main.go | sed -E 's/.*"([^"]+)".*/\1/')
+        if [ -z "$VERSION" ]; then
+          echo "Error: could not parse version from main.go" >&2
+          exit 1
+        fi
+        TAG="v${VERSION}"
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Error: tag $TAG already exists." >&2
+          exit 1
+        fi
+        git tag -a "$TAG" -m "Release $TAG"
+        echo "Created tag $TAG. Push with: git push origin $TAG"
+
+  release:
+    desc: Build a stripped release binary with version injected from the latest git tag, then `go install`.
+    cmds:
+      - |
+        TAG=$(git tag --sort=-version:refname | head -n 1)
+        if [ -z "$TAG" ]; then
+          echo "Error: no git tags found. Run 'task tag' first." >&2
+          exit 1
+        fi
+        go build -ldflags "-s -w -X main.version=${TAG#v}" -o bin/sanigate
+      - go install

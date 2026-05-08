@@ -12,10 +12,13 @@ import (
 	color "github.com/TwiN/go-color"
 )
 
+// version is the build's reported version. The default "0.3.0" is the
+// in-source fallback; release builds override it via -ldflags "-X main.version=...".
+var version = "0.3.0"
+
 func main() {
 	const unsafeKeyword = "not safe"
 	const notSecure = "not secure"
-	version := "0.3.0"
 
 	ver := flag.Bool("version", false, "print version and exit")
 	porcelain := flag.Bool("porcelain", false, "do not do the plumbing after the analysis")
