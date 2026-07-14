@@ -51,6 +51,8 @@ Under the hood, it interacts with the OpenAI API to generate a summary of the sc
 - ℹ️ Get your OpenAI API key from https://platform.openai.com/api-keys
 - ℹ️ Check the usage at: https://platform.openai.com/usage
 
+> ℹ️ **About the real-world examples below**: SaniGate judges scripts on two separate axes — **intent** (is there evidence of malice?) and **capability** (blast radius). Mainstream `curl | sh` installers (rustup, starship, devbox, casaos, webi, golangci-lint, …) are high-capability but benign, so they come back **`LEGIT, BUT POWERFUL`** (exit `0`) rather than flagged — they download and run binaries, but that's how installers work, not evidence of malice. Actual malware, with obfuscation / exfiltration / destructive commands, comes back **`suspicious`** or **`malicious`**. Distinguishing the two is the whole point. See [Two axes & exit codes](#-two-axes--exit-codes).
+
 ```bash
 # Use your preferred method of setting the ENV var (e.g. https://direnv.net)
 export SNGT_OPENAI_API_KEY="<your_openai_api_key_goes_here>"
@@ -70,19 +72,19 @@ cat ./scripts/good.sh | sanigate -m gpt-4o -p
 cat ./scripts/CoolDude.sh | sanigate | bash
 cat ./scripts/base64.sh | sanigate | sh
 
-# Sometimes this one is a false positive (GPT being paranoid, I guess)
+# A genuinely benign script — comes back 'SAFE' (capability: low, exit 0)
 cat ./scripts/good.sh | sanigate | sh
 
-# This one is a tricky one (sometimes it's a false negative, although nobody wants some nasty assware on their system)
+# Adware installer — flagged 'suspicious' (exit 3): downloads a payload and registers a root LaunchAgent
 cat ./scripts/adware.sh | sanigate | bash
 
 # Just analyse the script and don't pipe it further (notice the flag)
 cat ./scripts/evil.sh | sanigate -p
 
-# An example of a real-world script which takes really long to analyse (and due to complexity might be a false[?] positive)
+# A large real-world installer — slow to analyse (many chunks); benign, 'LEGIT, BUT POWERFUL' (exit 0)
 curl -fsSL https://get.casaos.io | sanigate | sudo bash
 
-# An example of a normal "safe" script you might encounter and would like to run
+# A mainstream installer (webinstall.dev) — benign 'LEGIT, BUT POWERFUL' (exit 0): fetches and runs a binary, but no malice
 curl -sS https://webi.sh/webi | sanigate | bash
 
 # Devbox is a good one (although it's a good example of a script that downloads/installs something else and runs it too)
@@ -96,11 +98,38 @@ curl -Lsf https://sh.benthos.dev | sanigate | bash
 sh -c "$(curl -fsSL https://starship.rs/install.sh | sanigate)" -y -f
 sh <(curl -Ssf tea.xyz | sanigate)
 
-# Go linters are Ok
+# A reputable tool installer — benign 'LEGIT, BUT POWERFUL' (exit 0), even though it curls a binary and runs it
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sanigate | sh -s -- -b $(go env GOPATH)/bin
 
-# Rust seems to be pretty careful about their install scripts too (and it's a great example of a loooooong one)
+# Rustup is careful and well-written — benign 'LEGIT, BUT POWERFUL' (exit 0), and a great example of a loooooong, multi-chunk one
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sanigate | sh
+```
+
+### 🚦 Two axes & exit codes
+
+SaniGate rates a script on two **separate** axes, so a powerful-but-legitimate installer doesn't get lumped in with malware:
+
+- **intent** — is there *evidence of malice*? `benign` / `suspicious` / `malicious`. Downloading and running an official binary is `benign` even though it's powerful; `malicious` is reserved for red flags (obfuscation, exfiltration, security-tool tampering, hidden persistence, destructive commands, or behaviour that contradicts the stated purpose).
+- **capability** — *blast radius* if it wanted to do harm: `low` / `medium` / `high`.
+
+The headline combines them: `SAFE` (benign, low/medium capability), **`LEGIT, BUT POWERFUL`** (benign, high capability — the typical installer), `SUSPICIOUS`, or `DANGEROUS`.
+
+Above the verdict, SaniGate prints a yellow **`Danger:`** list of concrete risk factors to weigh before running — even for a benign script (e.g. *downloads and executes a binary without verifying a checksum*, *needs root*, *pipes remote content into a shell*). It's the "legit, but here's what could still bite you" section, separate from the red flags that signal actual malice.
+
+The **exit code is keyed to intent only** — capability never raises it, so an installer exits `0`:
+
+| Code | Intent | Headline |
+|---|---|---|
+| `0` | benign | `SAFE` or `LEGIT, BUT POWERFUL` |
+| `3` | suspicious | `SUSPICIOUS` |
+| `4` | malicious | `DANGEROUS` |
+| `1` | — | operational error (missing/invalid key, empty input, API failure) |
+| `2` | — | usage error (bad flag) |
+
+Each axis takes the worst value across the whole-script conclusion and every individual chunk, and SaniGate fails closed — an unparseable or unknown intent is treated as `malicious`, unknown capability as `high`. Because a pipe doesn't short-circuit on exit status, `… | sanigate | bash` still runs the downstream shell after the double confirmation; the exit code is there for your own scripting, e.g. analysis-only gating that lets legit installers through but stops malware:
+
+```bash
+cat ./install.sh | sanigate -p && echo "no malice detected" || echo "flagged (exit $?)"
 ```
 
 ## ⚙️ Configuration
@@ -147,6 +176,8 @@ If you choose to put your API key in the config file rather than the env var:
 
 This release switches the default from `gpt-3.5-turbo` to `gpt-4o-mini` (cheaper per token, more capable, supports structured outputs). To pin the previous behaviour, uncomment and set `model = "gpt-3.5-turbo"` in the config.
 
+> ℹ️ SaniGate asks the model for a **structured JSON verdict** (explicit `intent` and `capability` fields — see [Two axes & exit codes](#-two-axes--exit-codes)) rather than parsing prose, which is why the model must support structured outputs. It runs at `temperature = 0` for reproducible verdicts. On startup it does a best-effort capability check against the community [models.dev](https://models.dev) registry (cached under your OS cache dir) and prints a warning if the configured model isn't known to support structured outputs or rejects a `temperature` parameter (e.g. the `o1`/`o3` series). The check never blocks: an unknown or brand-new model just proceeds, and the OpenAI API remains the source of truth.
+
 ## 🧪 Example Runs
 
 > `rm -rf /` example
@@ -185,6 +216,12 @@ task release
 task run
 task test
 
+# Build the binary and run it against every fixture in ./scripts, asserting each
+# verdict via the exit code (good.sh must be safe; the rest must flag). Reads the
+# key from SNGT_OPENAI_API_KEY or the config file.
+./run-scripts.sh                 # all fixtures
+./run-scripts.sh good.sh bad.sh  # a subset
+
 gitleaks detect --source . -v
 ```
 
@@ -192,13 +229,13 @@ See: git commit message format https://www.conventionalcommits.org/en/v1.0.0/
 
 **ToDos**:
 
-- [ ] Write some tests
+- [x] ~~Write some tests~~ — pure verdict logic (intent/capability aggregation, exit codes, labels) and the models.dev registry lookup are unit-tested; `./run-scripts.sh` asserts end-to-end verdicts. (API-mocking layer still a TODO.)
 - [ ] Add and test more malicious scripts
 - [ ] Make everything configurable (including prompts)
-- [ ] Debug output artefacts (gaps in the list, dot in the summary, etc.) and write some fixes
 - [ ] ❓ Add progress bar & context timeouts
 - [ ] ❓ Create a homebrew installer
-- [ ] ❓ Tweak the GPT-3 parameters and prompts to get better results (join actions and security requests into one?)
+- [x] ~~Tweak the parameters and prompts to get better results (join actions and security requests into one?)~~ — actions + security are now one structured call per chunk, at `temperature = 0`
+- [x] ~~Debug output artefacts (gaps in the list, dot in the summary, etc.)~~ — resolved by structured output; the regex post-processing layer is gone
 
 ## ⚖️ License
 See [LICENSE](./LICENSE.md) file.
