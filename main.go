@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"strings"
 
 	color "github.com/TwiN/go-color"
 )
@@ -17,9 +16,6 @@ import (
 var version = "0.3.0"
 
 func main() {
-	const unsafeKeyword = "not safe"
-	const notSecure = "not secure"
-
 	ver := flag.Bool("version", false, "print version and exit")
 	porcelain := flag.Bool("porcelain", false, "do not do the plumbing after the analysis")
 	porcelainShort := flag.Bool("p", false, "do not do the plumbing after the analysis (shorthand)")
@@ -72,6 +68,9 @@ func main() {
 		)
 	}
 
+	// Preflight: warn (never block) if the model is known to lack a needed capability.
+	checkModelCapabilities(errLog, model)
+
 	client, ctx, err := initOpenAI(apiKey)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
@@ -102,56 +101,63 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	output := ""
-	securityAudit := ""
+	var (
+		allActions   []string
+		allDangers   []string
+		allRedFlags  []string
+		chunkIntents []string
+		chunkCaps    []string
+	)
 
-	for i, chunk := range chunks {
-		listPrompt := makeListPrompt(chunk)
-		securityPrompt := makeSecurityPrompt(chunk)
-
-		// Ask GPT to make a list of bullet points about chunk actions
-		resp, err := requestCompletion(client, ctx, listPrompt, model)
+	for _, chunk := range chunks {
+		analysis, err := analyzeChunk(client, ctx, makeChunkPrompt(chunk), model)
 		if err != nil {
-			errLog.Fatalf("Failed to request completion: %v", err)
+			errLog.Fatalf("Failed to analyze script: %v", err)
 		}
-		output += "\n" + resp
-
-		// Ask GPT to make a security audit of a chunk
-		resp, err = requestCompletion(client, ctx, securityPrompt, model)
-		if err != nil {
-			errLog.Fatalf("Failed to request completion: %v", err)
-		}
-		securityAudit += resp + "\n"
-
-		// If it's the last chunk, then ask GPT to make a summary
-		if i == len(chunks)-1 {
-			output = removeEmptyLines(output)
-			output = fixBulletPoints(output)
-
-			conclusionPrompt := makeConclusionPrompt(output, securityAudit)
-			resp, err = requestCompletion(client, ctx, conclusionPrompt, model)
-			if err != nil {
-				errLog.Fatalf("Failed to request completion: %v", err)
-			}
-
-			if len(resp) == 0 {
-				continue
-			}
-
-			resp = removeAnswerPrefix(resp)
-
-			if strings.Contains(resp, unsafeKeyword) || strings.Contains(resp, notSecure) {
-				resp = color.InRed(resp)
-			} else {
-				resp = color.InGreen(resp)
-			}
-
-			output += "\n\n" + strings.TrimSpace(resp)
-		}
+		allActions = append(allActions, analysis.Actions...)
+		allDangers = append(allDangers, analysis.Dangers...)
+		allRedFlags = append(allRedFlags, analysis.RedFlags...)
+		chunkIntents = append(chunkIntents, analysis.VerdictIntent)
+		chunkCaps = append(chunkCaps, analysis.VerdictCapability)
 	}
 
-	// Print the actions list
-	errLog.Println(output)
+	conclusion, err := concludeAnalysis(
+		client, ctx,
+		makeConclusionPrompt(bulletList(allActions), bulletList(allRedFlags)),
+		model,
+	)
+	if err != nil {
+		errLog.Fatalf("Failed to summarize the script: %v", err)
+	}
+
+	// Fail closed on each axis: the whole-script judgment and the worst individual
+	// chunk each get a vote. Intent takes the most-malicious value seen, capability
+	// the highest — a rosy summary can't bury a chunk that already flagged malice.
+	verdict := Verdict{
+		Intent:     worstIntent(append(chunkIntents, conclusion.VerdictIntent)...),
+		Capability: maxCapability(append(chunkCaps, conclusion.VerdictCapability)...),
+	}
+
+	// From here the process exits with an intent-keyed code. Fatalf paths above still
+	// exit 1 (os.Exit skips deferred funcs), so an operational failure stays distinct
+	// from a "dangerous" verdict. A benign-but-powerful installer exits 0.
+	defer func() { os.Exit(verdict.exitCode()) }()
+
+	errLog.Println(color.InBold("Actions:"))
+	errLog.Println(bulletList(allActions))
+	if len(allRedFlags) > 0 {
+		errLog.Println(color.InBold("\nRed flags:"))
+		errLog.Println(bulletList(allRedFlags))
+	}
+	// Danger: real risk factors even for a benign-but-powerful script (fetch+exec,
+	// no checksum, root, …). Shown in yellow so the user weighs them before the
+	// confirmation prompt, regardless of the intent verdict.
+	if len(allDangers) > 0 {
+		errLog.Println(color.InYellow(color.InBold("\nDanger:")))
+		errLog.Println(color.InYellow(bulletList(allDangers)))
+	}
+	headline := fmt.Sprintf("%s (capability: %s)\n%s", verdictLabel(verdict), verdict.Capability, conclusion.Summary)
+	errLog.Println("\n" + colorForVerdict(verdict, headline))
 
 	// If no plumbing is needed, then exit
 	if isPorcelain {
