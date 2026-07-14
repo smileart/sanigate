@@ -82,6 +82,8 @@ tags
 
 # Build artifacts (architecture-specific, built locally via `task`)
 /bin/
+# Bare `go build`/`go install` in the repo root drops the binary here
+/sanigate
 
 # Taskfile
 .task
