@@ -103,6 +103,9 @@ curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/insta
 
 # Rustup is careful and well-written — benign 'LEGIT, BUT POWERFUL' (exit 0), and a great example of a loooooong, multi-chunk one
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sanigate | sh
+
+# Pulumi (IaC) — another mainstream installer that downloads and runs a binary; benign 'LEGIT, BUT POWERFUL'
+curl -fsSL https://get.pulumi.com | sanigate | sh
 ```
 
 ### 🚦 Two axes & exit codes
