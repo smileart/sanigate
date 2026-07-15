@@ -12,7 +12,7 @@
 > 
 > 🦠 **Name**: The name comes from **Sanitiz**(**-er**/**-ing**/**-isation**) Gate (aka sani-gate, Disinfection Tunnel, Sanitation Disinfection Gate, Sanitisation Booth, Decontamination Chamber, Sterilisation Gateway, Cleanroom Air Shower) which are disinfection chambers which typically use a combination of UV-C light and/or misting with a disinfectant solution to eliminate bacteria and viruses on surfaces and clothing.
 > 
-> [![CodeFactor](https://www.codefactor.io/repository/github/smileart/sanigate/badge)](https://www.codefactor.io/repository/github/smileart/sanigate) [![Go Report Card](https://goreportcard.com/badge/github.com/smileart/sanigate)](https://goreportcard.com/report/github.com/smileart/sanigate)
+> [![CodeFactor](https://www.codefactor.io/repository/github/smileart/sanigate/badge)](https://www.codefactor.io/repository/github/smileart/sanigate)
 
 ## ❓Why
 
