@@ -11,9 +11,9 @@ import (
 	color "github.com/TwiN/go-color"
 )
 
-// version is the build's reported version. The default "0.3.0" is the
+// version is the build's reported version. The default "0.4.0" is the
 // in-source fallback; release builds override it via -ldflags "-X main.version=...".
-var version = "0.3.0"
+var version = "0.4.0"
 
 func main() {
 	ver := flag.Bool("version", false, "print version and exit")
