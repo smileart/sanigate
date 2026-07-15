@@ -180,14 +180,19 @@ This release switches the default from `gpt-3.5-turbo` to `gpt-4o-mini` (cheaper
 
 ## 🧪 Example Runs
 
-> `rm -rf /` example
-![bad.sh](./img/screen_0.jpg)
+The two axes in action — a legitimate installer reads as **`LEGIT, BUT POWERFUL`** with its real caveats surfaced under **Danger**, while malware is flagged **`DANGEROUS`**. (GIFs regenerated via [`tapes/record.sh`](./tapes/record.sh).)
 
-> https://webinstall.dev installation example
-![webi.sh](./img/screen_1.jpg)
+> A real installer (webinstall.dev) — benign but powerful, with a Danger breakdown
+> `curl -fsSL https://webi.sh/webi | sanigate -p`
+![webi installer — LEGIT, BUT POWERFUL](./img/webi.gif)
 
-> Backdoor example (`doot-kit.sh`)
-![doot-kit.sh](./img/screen_2.jpg)
+> `rm -rf /` — malicious
+> `cat scripts/bad.sh | sanigate -p`
+![bad.sh — DANGEROUS](./img/bad.gif)
+
+> A netcat/cron backdoor (doot-kit.sh) — malicious
+> `cat scripts/doot-kit.sh | sanigate -p`
+![doot-kit.sh — DANGEROUS](./img/doot-kit.gif)
 
 ## 🔗 Malicious Script Sources
 
